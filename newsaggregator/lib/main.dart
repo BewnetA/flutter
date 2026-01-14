@@ -162,7 +162,7 @@ class _AppWrapperState extends State<AppWrapper> {
         index: _currentIndex,
         children: [
           HomeScreen(
-            newsList: dummyNews,
+            // REMOVE this line: newsList: dummyNews,
             bookmarkedIds: _bookmarkedIds,
             onBookmarkToggle: _toggleBookmark,
             onMarkAsRead: _markAsRead,
