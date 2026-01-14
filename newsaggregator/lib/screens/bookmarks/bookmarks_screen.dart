@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:local_news/models/news_model.dart';
 import 'package:local_news/screens/home/news_card.dart';
 
-class BookmarksScreen extends StatelessWidget {
+class BookmarksScreen extends StatefulWidget {
   final List<NewsArticle> newsList;
   final List<String> bookmarkedIds;
   final Function(String) onBookmarkToggle;
@@ -18,14 +18,19 @@ class BookmarksScreen extends StatelessWidget {
     required this.onDownload,
   });
 
+  @override
+  State<BookmarksScreen> createState() => _BookmarksScreenState();
+}
+
+class _BookmarksScreenState extends State<BookmarksScreen> {
   List<NewsArticle> get _bookmarkedNews {
-    return newsList
-        .where((news) => bookmarkedIds.contains(news.id))
+    return widget.newsList
+        .where((news) => widget.bookmarkedIds.contains(news.id))
         .map((news) => news.copyWith(isBookmarked: true))
         .toList();
   }
 
-  void _clearAllBookmarks(BuildContext context) {
+  void _clearAllBookmarks() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -40,7 +45,7 @@ class BookmarksScreen extends StatelessWidget {
           TextButton(
             onPressed: () {
               for (final news in _bookmarkedNews) {
-                onBookmarkToggle(news.id);
+                widget.onBookmarkToggle(news.id);
               }
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
@@ -60,6 +65,15 @@ class BookmarksScreen extends StatelessWidget {
     );
   }
 
+  void _showNotifications() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('No new notifications'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final bookmarkedNews = _bookmarkedNews;
@@ -72,18 +86,36 @@ class BookmarksScreen extends StatelessWidget {
           style: const TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 24,
+            color: Color(0xFF111827),
           ),
         ),
         centerTitle: false,
-        actions: bookmarkedNews.isNotEmpty
-            ? [
-                IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  onPressed: () => _clearAllBookmarks(context),
-                  tooltip: 'Clear all bookmarks',
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Search bookmarks feature coming soon'),
+                  duration: Duration(seconds: 2),
                 ),
-              ]
-            : null,
+              );
+            },
+            color: Colors.grey[700],
+          ),
+          IconButton(
+            icon: const Icon(Icons.notifications_none),
+            onPressed: _showNotifications,
+            color: Colors.grey[700],
+          ),
+          if (bookmarkedNews.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              onPressed: _clearAllBookmarks,
+              tooltip: 'Clear all bookmarks',
+              color: Colors.grey[700],
+            ),
+        ],
       ),
       body: bookmarkedNews.isEmpty
           ? Center(
@@ -111,26 +143,35 @@ class BookmarksScreen extends StatelessWidget {
                 ],
               ),
             )
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: bookmarkedNews.length,
-              itemBuilder: (context, index) {
-                final news = bookmarkedNews[index];
-                return NewsCard(
-                  news: news,
-                  onBookmark: () => onBookmarkToggle(news.id),
-                  onNotInterested: () {
-                    onBookmarkToggle(news.id);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Article removed from bookmarks'),
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
-                  },
-                  onDownload: () => onDownload(news.id),
-                );
-              },
+          : CustomScrollView(
+              slivers: [
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final news = bookmarkedNews[index];
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        child: NewsCard(
+                          news: news,
+                          onBookmark: () => widget.onBookmarkToggle(news.id),
+                          onNotInterested: () {
+                            widget.onBookmarkToggle(news.id);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Article removed from bookmarks'),
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                          },
+                          onDownload: () => widget.onDownload(news.id),
+                        ),
+                      );
+                    },
+                    childCount: bookmarkedNews.length,
+                  ),
+                ),
+              ],
             ),
     );
   }
